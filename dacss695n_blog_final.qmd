@@ -1,0 +1,281 @@
+---
+title: "DACSS 695N Blog"
+author: "Tenzin Lhamo"
+description: "Network Analysis of a Hospital Ward: Structure, Community, and Interactions"
+date: "05/13/24"
+format: docx
+---
+
+# Blog Post 1: Project Proposal 
+
+My research project will focus on informal networks between professionals in the hospital setting.
+
+The central question I will be exploring is, "How do informal communication networks among professionals at a neurology department of a hospital affect information flow and team dynamics?" In this study, "informal communication" can be classified by a casual conversation between coworkers that is not necessarily related to work; this can be about their personal lives or work-related situations.
+
+To address this question, the null hypothesis is there is no association between informal communication networks among professionals in the neurology department and effectiveness of information flow and team dynamics. The alternative hypothesis is the use of informal communication networks by professionals in the neurology department correlates with more effective information flow and team dynamics.
+
+The choice of topic is inspired by my current position as an administrative assistant at a neurology department at a hospital in Boston, MA. From my experience, I have noticed the intricate communication patterns and methods that create both professional and informal interactions in a hospital environment. I have also observed just how common and important the informal conversations seem to be in maintaining relationships, sharing information, seeking support, and problem-solving. Additionally, there are numerous people with different backgrounds who collaborate and effectively communicate to provide care to patients. I believe it will be extremely interesting to learn more about and analyze the social dynamics at my department.
+
+I plan on collecting data by using an ethnographic method and by conducting one-on-one interviews to gain deeper insights. The participants I will be collecting data from are coworkers, including physicians, physician assistants, nurse specialists, administrators, medical students, and other supporting personnel. The ethnographic data will be collected by observing informal conversations behind the front desk or in the break room between coworkers, whether it is in person or through text, email, or phone calls. I will focus on the topic, duration, and frequency of such conversations.
+
+Due to the nature of the setting of the study, there are some expected challenges. The first is confidentiality concerns because this is at a hospital setting where I am observing the interaction between medical and/or non-medical professionals. These challenges can be mitigated by gaining permission from the department head and consent from each participant. Furthermore, I will build a sense of trust and confidentiality with the participants by following ethical guidelines. Another challenge is time constraints and limited access to participants for the interviews as this will be conducted in a fast-paced professional setting. The providers are often very busy between seeing patients, meeting with medical students or other providers, finishing encounter notes, etc. I do, however, believe that this can be addressed by communicating with my coworkers and planning for interviews in advance. Finally, for the ethnographic portion, my positionality as both a researcher and worker at the setting can lead to challenges like biases or change in participant behavior. To mitigate this, I will try to remain objective, acknowledge potential biases, and understand how they can affect the data. Also, I will collect data from a diverse group of people to ensure that I have different relationships with each of them.
+
+# Blog Post 2: Proposal Revision and Data Introduction
+
+After reviewing my idea and comments from Professor Song, I decided to find available data on this topic due to the confidentiality challenges associated with the data collection. I scoured through multiple social science databases including the University of Michigan's ISPCR, the Stanford Network Analysis Project, Duke Network Analysis Center, and Network Repository, and had some difficulties finding network data because of the nature of the research project, as it focuses on the interaction of patients and healthcare workers. I had also wanted to find data on an infectious disease, like malaria, is spread within a community, but that was also difficult to obtain. The dataset that I ended up choosing for my project contained the temporal network of contacts between patients and healthcare workers (paramedical staff, medical doctors, and administrative staff) at a hospital ward in Lyon, France. The data description clarifies that a status of 1 represents paramedical staff (including nurses), 2 represents patient, 3 represents medical doctor, and 4 represents administrative staff. The data was collected from Monday, December 6, 2010 at 1:00pm to Friday, December 10, 2010 at 2:00pm. This set contains data on edges and attributes, such as the duration of time since the start of data collection in 20 second intervals of which the contact was active.
+
+The objective of my new research project is to gain a better understanding of interaction patterns in a hospital setting, effects of healthcare worker status on their interaction patterns, and identify structural characteristics. My new research questions are:
+
+What is the overall structure of contact network between patients and healthcare workers in this ward? Are there clusters or communities of individuals that interact more with each other? How does an healthcare worker's (paramedical staff, medical doctor, or administrative staff) status affect their patterns of interactions with patients?
+
+My new hypotheses are:
+
+- H1: A structured pattern exists between patients and healthcare workers in this ward due to differences in roles and responsibilities.
+
+- H2: Individuals within the same status (patient, nurse/paramedical staff, medical doctor, administrative staff) within the network will form distinct communities and interact more with one another, due to having the same roles and responsibilities.
+
+- H3: Medical doctors interact more frequently among themselves compared to nurses/paramedical staff interacting among themselves. This can be due to the hierarchy system in the hospital where medical doctors provide more specialized care whereas nurses/paramedical staff interact with a wider range of people, including patients and administrative staff.
+
+My data analysis method will start with removing missing values and rearranging the one column of csv data into five different columns to better interpret the data. I also included the descriptions of individual's status variables. This is done below. In the next few blogs, I will analyze the structure of the network and interpret node distribution, identify clusters or communities, and examine the difference in interaction between different kinds of healthcare workers and patients. Lastly, I will use statistical analysis to determine if there are significant differences in patient interaction between nurses and medical doctors.
+
+```{r}
+#Loading library
+library(igraph)
+library(statnet)
+
+#Loading data
+attr_zip <- "C:/Users/tenzi/Downloads/ia-hospital-ward-proximity-attr.zip"
+edges_zip <- "C:/Users/tenzi/Downloads/ia-hospital-ward-proximity (1).zip"
+destination_dir <- "C:/Users/tenzi/Downloads/"
+unzip(attr_zip, exdir = destination_dir)
+unzip(edges_zip, exdir = destination_dir)
+
+hosp_edges <- read.table("C:/Users/tenzi/Downloads/ia-hospital-ward-proximity.edges", header = FALSE)
+hosp_edges <- data.frame(do.call(rbind, strsplit(as.character(hosp_edges$V1), ",")))
+colnames(hosp_edges) <- c("Person1", "Person2", "Time")
+summary(hosp_edges)
+edges_na <- any(is.na(hosp_edges))
+print(edges_na)
+
+hosp_attr <- read.table("C:/Users/tenzi/Downloads/ia-hospital-ward-proximity-attr.edges", sep = "\t", header = FALSE, skip = 16)
+hosp_attr <- data.frame(do.call(rbind, strsplit(as.character(hosp_attr$V1), ",")))
+colnames(hosp_attr) <- c("Person1", "Person2", "Time (s)", "Status1", "Status2")
+summary(hosp_attr)
+attr_na <- any(is.na(hosp_attr))
+print(attr_na)
+
+# Including column description
+attr_column_desc <- c(
+  "Person1: Anonymous ID of the first person in contact",
+  "Person2: Anonymous ID of the second person in contact",
+  "Time: Time at which the contact occurred, representing the start time of the contact interval (measured in seconds)",
+  "Status1: Status of the first person in contact (1 = NUR/paramedical staff, 2 = PAT/Patient, 3 = MED/Medical doctor, 4 = ADM/administrative staff)",
+  "Status2: Status of the second person in contact (1 = NUR/paramedical staff, 2 = PAT/Patient, 3 = MED/Medical doctor, 4 = ADM/administrative staff)"
+)
+
+#Checking structure
+str(hosp_edges)
+str(hosp_attr)
+
+#Converting columns to numeric
+hosp_attr$`Time (s)` <- as.numeric(hosp_attr$`Time (s)`)
+hosp_attr$Status1 <- as.numeric(hosp_attr$Status1)
+hosp_attr$Status2 <- as.numeric(hosp_attr$Status2)
+```
+
+# Blog Post 3: Structure, Community Detection, & Structural Equivalence
+
+The objective of this blog post is to address Hypotheses 1 and 2 delve deeper into the structure of the dataset, gaining a better understanding of any communities and structures that may be present within the nodes. I will first create the network graph and visualize it to understand the overall structure and patterns of interaction between people of different roles or statuses. Then, I will identify communities that exist within the network.
+
+- Network Structure Analysis
+    - Interpretation: Figure 1 represents the hospital ward contact network where each node color corresponds with a different status as indicated by the legend. Based on the plot, the nurse and paramedic staff, marked by steel blue circles, are the most dominant, or connected group within the network as they are clustered in the middle and have many connections among themselves. Medical doctors, represented by dark navy circles, are also clustered among themselves in the bottom right. Administration staff, marked by yellow circles, are more sporadically spread out with two on the top right. While there are less administrative staff, it seems like they do have connections to one another and people of other statuses. Lastly, the patients, represented by red dots, are the most dispersed with some in the center and others around the edges. The patients are not as tightly knit among each other, but they do have connections to people of other statuses. Overall, the distinct statuses of people at the ward have varying levels of connectivity and interaction among one another. This supports Hypothesis 1 because there are distinct groups and levels of connectivity based on the statuses. 
+
+```{r}
+library(igraph)
+
+#Creating graph
+hosp_graph <- graph_from_data_frame(d = hosp_edges, directed = FALSE)
+class(hosp_graph)
+str(hosp_graph)
+
+#Setting up attributes
+V(hosp_graph)$status <- ifelse(V(hosp_graph)$name %in% hosp_attr$Person1, 
+                          hosp_attr$Status1[match(V(hosp_graph)$name, hosp_attr$Person1)], 
+                          hosp_attr$Status2[match(V(hosp_graph)$name, hosp_attr$Person2)])
+
+#Assigning different colors based on status
+status_colors <- c("1" = "steelblue", 
+                   "2" = "red", 
+                   "3" = "navyblue", 
+                   "4" = "orange")
+
+#Plotting network graph
+graph_layout <- layout_nicely(hosp_graph)
+plot(hosp_graph, 
+     vertex.label = NA, 
+     vertex.size = 9,
+     edge.width = 0.5,
+     edge.color = "darkgray",
+     vertex.color = status_colors[V(hosp_graph)$status],
+     main = "Figure 1. Hospital Ward Contact Network",
+     layout = graph_layout
+     )
+
+#Creating legend
+legend("bottomright", 
+       legend = c("Nurse/Paramed Staff", 
+                  "Patient", 
+                  "Medical Doctor", 
+                  "Administrative Staff"), 
+       col = c("steelblue", "red", "navyblue", "orange"), 
+       pch = 19, 
+       title = "Status")
+```
+
+- Community Detection
+    - Interpretation: Figure 2 depicts community detection among the hospital ward contact network. The different cohort clusters represent distinct communities based on connectivity patterns of the nodes. The plot depicts six different communities that exist among the network. While the exact community description is not known due to data restrictions, Community 4, outlined in cyan blue, is the largest community. Other visibly larger communities are Community 1, outlined in red, and Community 3, outlined in green. The other communities are much smaller, suggesting that some communities have stronger connections among its members compared to others. Furthermore, there are lots of overlaps between community groups which suggests that there are inter-community connections, or individuals among different communities interact with one another. This supports Hypothesis 2 to a certain extent because there are six distinct community groups, but there is also overlaps between the groups suggesting that there are inter-community connections. However, since the community representation is not defined, it is difficult to state if Hypothesis 2 is supported without additional information. 
+    
+```{r}
+# Creating community clusters
+community <- cluster_louvain(hosp_graph)
+
+# Assigning community colors
+community_colors <- rainbow(length(unique(membership(community))))
+
+# Plotting community
+community_layout <- layout_nicely(hosp_graph)
+plot(community, 
+     hosp_graph, 
+     vertex.label = NA, 
+     vertex.size = 9,
+     vertex.color = community_colors[membership(community)],
+     edge.size = 0.5,
+     main = "Figure 2. Community Detection in a Hospital Ward Contact Network",
+     layout = community_layout)
+
+# Creating legend
+legend("topright", 
+       legend = paste("Community", 1:length(community_colors)), 
+       col = community_colors, 
+       pch = 19, 
+       title = "Communities")
+```
+
+- Structural Equivalence
+    - Interpretation: The structural equivalence nodes and pairs output shows that there is a high degree of structural equivalence among this network as each node is structurally equivalent to many other nodes. This suggests that lots of the individuals in the network share similar roles or belong to multiple communities. This provides further support for Hypothesis 2 because it suggests that individuals with the same statuses are more likely to interact with one another.
+```{r}
+#Getting structure equivalence
+se <- similarity(hosp_graph, 
+                 method = "invlogweighted")
+
+#Calculating structurally equivalent nodes
+equivalent_nodes <- which(se > 0.9, arr.ind = TRUE)
+
+#Getting structurally equivalent pairs 
+equivalent_pairs <- unique(t(apply(equivalent_nodes, 1, sort)))
+print(equivalent_pairs)
+```
+
+# Blog Post 4: Reachability & Small World Phenomenon
+
+The objective of this blog is to gain a deeper understanding of the connectivity of the network by calculating reachability metrics among the hospital ward network, specifically for nurses/paramedical staff and medical doctors to test for Hypothesis 3. This includes the shortest path, average path length, and network diameter. I also aim to check for small-world properties of the network. 
+
+- Reachability
+    - Interpretation: The code segment below contains a matrix of the shortest paths connecting each pairs of nodes in the hospital ward network, particularly for nurses/paramedical staff and medical doctors. Then, the average path length out of the shortest paths is calculated. The output shows that the average path lengths for nurses/paramedical staff is 1.40 whereas the average path lengths for medical doctors is 1.03. This suggests that Hypothesis 3 is supported due to a lower average path length for doctors compared to nurses. The average path length overall is approximately 1.58, suggesting that this is a very well-connected network. Many of these nodes are reachable within a short distance. The network diameter of 3 also indicates that the out of the shortest paths between two nodes, the longest distance between any two nodes is 3, further suggesting that this seems to be a relatively well-connected network. 
+```{r}
+#Filtering for nurses/paramedical staff and medical doctors 
+nurses_graph <- induced_subgraph(hosp_graph, V(hosp_graph)[V(hosp_graph)$status == 1])
+doctors_graph <- induced_subgraph(hosp_graph, V(hosp_graph)[V(hosp_graph)$status == 3])
+
+#Calculating shortest paths for nurses/paramedical staff and medical doctors
+nurses_shortest_paths <- shortest.paths(nurses_graph)
+print(nurses_shortest_paths)
+avg_path_length_nurses <- mean(nurses_shortest_paths, na.rm = TRUE)
+print(avg_path_length_nurses)
+
+doctors_shortest_paths <- shortest.paths(doctors_graph)
+print(doctors_shortest_paths)
+avg_path_length_doctors <- mean(doctors_shortest_paths, na.rm = TRUE)
+print(avg_path_length_doctors)
+
+#Calculating shortest paths for all statuses
+shortest_paths <- shortest.paths(hosp_graph)
+print(shortest_paths)
+
+#Calculating average path for all statuses
+avg_path_length <- mean(shortest_paths, na.rm = TRUE)
+print(avg_path_length)
+
+#Calculating network diameter fopr all statuses
+network_diameter <- diameter(hosp_graph)
+print(network_diameter)
+```
+
+- Small World Phenomenon
+    - Interpretation: The code segment below calculates the average clustering coefficient and characteristic path length in order to assess the small world phenomenon. The output message, "The network contains characteristics of a small world network," suggests that average cluster coefficient is greater than 0 and the characteristic path length is less than the logarithm of the number of nodes in the network. This message indicates that this is a small world network with high clustering and a short average path length between the nodes.
+    
+```{r}
+avg_cluster_coef <- mean(transitivity(hosp_graph, 
+                                      type = "local"))
+
+char_path_length <- mean(mean_distance(hosp_graph))
+
+print(ifelse(avg_cluster_coef > 0 && char_path_length < log(length(V(hosp_graph))), 
+             "The network contains characteristics of a small world network.", 
+             "The network does not contain characteristics of a small world network."))
+```
+
+# Blog Post 5: Cultural Influence, Network Dynamics, & Conclusion
+
+The objective of this blog is to delve into the interplay between network dynamics, hierarchies, and cultural influences within the network. Specifically, the goal is to dive deeper into the dynamics of nurses/paramedical staff and medical doctors in order to test Hypothesis 3, which stated that Medical doctors interact more frequently among themselves compared to nurses/paramedical staff interacting among themselves due to the hierarchy system in the hospital where medical doctors provide more specialized care whereas nurses/paramedical staff interact with a wider range of people, including patients, administrative staff, and other healthcare workers. To do this, the Exponential Random Graph Models (ERGMs) will be utilized to compare the connections of pairs of nodes within the network. 
+
+- Statistical Inferences
+    - Interpretation: The code segment below fits ERGM models to test for Hypotheses 2 and 3. The first model, ergm_model, tests for Hypothesis 2 and the second model, ergm_model_with_attributes, further tests for Hypothesis 3. The results from the summary of the ergm_model test state that the estimate for edges is -0.21, the estimate for the standard error is 0.05, the z value is -4.70, and the Pr(>|z|) is <1e-04. Additionally, the estimate for nodemath.status is -0.51, the standard error is 0.09, the z value is -5.8, and the Pr(>|z|) is <1e-04. For this model, the null deviance is 3847, the residual deviance is 3723, the AIC is 3727, and the BIC is 3738. This all suggests that Hypothesis 2 is not supported as it seems like there is a significantly negative tendency for individuals within the same status to form distinct communities and interact among each other. The results from the summary of the ergm_model_with_attributes test state that the estimate for edges stays the same. The estimate for nodematch.status changes after accounting for specific pair interactions. The estimate for node.match of focus are the ones for status 1, nurse/paramedical staff, and status 3, medical doctors as Hypothesis 3 is being tested. For status 1, nurse/paramedical staff, is 0.59, the standard error is 0.40, the z value is 1.49, and the Pr(>|z|) is 0.14. The estimate for node.match for status 3, medical doctors, is 2.21, the standard error is 0.56, the z value is 3.98, and the Pr(>|z|) is <1e-04. Overall, the null deviance is 3847, the residual deviance is 3334, the AIC is 3346, and the BIC is 3382. This all further indicates that Hypothesis 3 is supported because medical doctors have a statistically significant p-value whereas nurses/paramedical staff do not. This suggests that medical doctors interact more frequently among themselves compared to nurses/paramedical staff interacting among themselves.
+    
+```{r}
+# Double checking graph properties
+class(hosp_graph)
+is.network(hosp_graph)
+any(is.na(hosp_graph))
+str(hosp_graph)
+print(hosp_graph)
+vertex_attr(hosp_graph)
+
+#Reloading library
+library(network)
+library(intergraph)
+library(ergm)
+
+# Adding status to igraph
+V(hosp_graph)$status <- ifelse(V(hosp_graph)$name %in% hosp_attr$Person1, 
+                               hosp_attr$Status1[match(V(hosp_graph)$name, hosp_attr$Person1)], 
+                               hosp_attr$Status2[match(V(hosp_graph)$name, hosp_attr$Person2)])
+
+# Converting igraph to network object
+hosp_net <- asNetwork(hosp_graph)
+class(hosp_net)
+print(hosp_net)
+
+#Checking status conversion
+network::get.vertex.attribute(hosp_net, "status")
+
+# Testing Hypothesis 2 by fitting an ERGM
+ergm_model <- ergm(hosp_net ~ edges + nodematch("status"))
+summary(ergm_model)
+
+# Testing Hypothesis 3 by fitting an ERGM
+ergm_model_with_attributes <- ergm(hosp_net ~ edges + nodematch("status") + nodematch("status", diff = TRUE))
+summary(ergm_model_with_attributes)
+```
+
+# References
+McFarland, C. R., Jeffrey A. Smith, James Moody, and Daniel. (n.d.). 13 Statistical Models for Networks | Network Analysis: Integrating Social Network Theory, Method, and Application with R. Retrieved May 16, 2024, from https://inarwhal.github.io/NetworkAnalysisR-book/ch13-Statistical-Models-Networks-R.html
+
+{nr-aaai15,
+title = {The Network Data Repository with Interactive Graph Analytics and Visualization},
+author={Ryan A. Rossi and Nesreen K. Ahmed},
+booktitle = {AAAI},
+url={http://networkrepository.com},
+year={2015}
+}
+
